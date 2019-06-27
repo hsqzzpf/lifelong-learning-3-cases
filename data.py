@@ -10,12 +10,14 @@ DATASET_CONFIGS = {
     'mnist': {'size': 32, 'channels': 1, 'classes': 10},
     'mnist28': {'size': 28, 'channels': 1, 'classes': 10},
     'CIFAR10': {'size': 32, 'channels': 3, 'classes': 10},
+    'CIFAR100': {'size': 32, 'channels': 3, 'classes': 100}
 }
 
 # specify available data-sets.
 AVAILABLE_DATASETS = {
     'mnist': datasets.MNIST,
-    'CIFAR10': datasets.CIFAR10
+    'CIFAR10': datasets.CIFAR10,
+    'CIFAR100': datasets.CIFAR100
 }
 
 # specify available transforms.
@@ -29,6 +31,9 @@ AVAILABLE_TRANSFORMS = {
     ],
     'CIFAR10': [
         transforms.ToTensor(),
+    ],
+    'CIFAR100': [
+        transforms.ToTensor()
     ]
 }
 
@@ -56,7 +61,7 @@ def get_dataset(name, type='train', download=True, capacity=None, permutation=No
 
     data_name = 'mnist' if name == 'mnist28' else name
     dataset_class = AVAILABLE_DATASETS[data_name]
-    # dataset_class = AVAILABLE_DATASETS['CIFAR10']
+
     # specify image-transformations to be applied
     dataset_transform = transforms.Compose([
         *AVAILABLE_TRANSFORMS[name],
@@ -79,10 +84,11 @@ def get_dataset(name, type='train', download=True, capacity=None, permutation=No
 
 
 class SubDataset(Dataset):
-    '''To sub-sample a dataset, taking only those samples with label in [sub_labels].
+    """To sub-sample a dataset, taking only those samples with label in [sub_labels].
 
     After this selection of samples has been made, it is possible to transform the target-labels,
-    which can be useful when doing continual learning with fixed number of output units.'''
+    which can be useful when doing continual learning with fixed number of output units.
+    """
 
     def __init__(self, original_dataset, sub_labels, target_transform=None):
         super().__init__()
@@ -117,9 +123,10 @@ class SubDataset(Dataset):
 
 
 class ExemplarDataset(Dataset):
-    '''Create dataset from list of <np.arrays> with shape (N, C, H, W) (i.e., with N images each).
+    """Create dataset from list of <np.arrays> with shape (N, C, H, W) (i.e., with N images each).
 
-    The images at the i-th entry of [exemplar_sets] belong to class [i], unless a [target_transform] is specified'''
+    The images at the i-th entry of [exemplar_sets] belong to class [i], unless a [target_transform] is specified
+    """
 
     def __init__(self, exemplar_sets, target_transform=None):
         super().__init__()

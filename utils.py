@@ -28,7 +28,7 @@ def loss_fn_kd(scores, target_scores, T=2.):
 
     # if [scores] and [target_scores] do not have equal size, append 0's to [targets_norm]
     n = scores.size(1)
-    if n>target_scores.size(1):
+    if n > target_scores.size(1):
         n_batch = scores.size(0)
         zeros_to_add = torch.zeros(n_batch, n-target_scores.size(1))
         zeros_to_add = zeros_to_add.to(device)

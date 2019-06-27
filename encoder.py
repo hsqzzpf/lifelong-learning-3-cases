@@ -1,10 +1,12 @@
 import torch
 from torch.nn import functional as F
+import torch.nn as nn
 from linear_nets import MLP, fc_layer
 from exemplars import ExemplarHandler
 from continual_learner import ContinualLearner
 from replayer import Replayer
 import utils
+from torchvision import models
 
 
 class Classifier(ContinualLearner, Replayer, ExemplarHandler):
@@ -36,13 +38,17 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         self.flatten = utils.Flatten()
 
         # fully connected hidden layers
-        self.fcE = MLP(input_size=image_channels*image_size**2, output_size=fc_units, layers=fc_layers-1,
-                       hid_size=fc_units, drop=fc_drop, batch_norm=fc_bn, nl=fc_nl, bias=bias,
-                       excitability=excitability, excit_buffer=excit_buffer, gated=gated)
-        mlp_output_size = fc_units if fc_layers > 1 else image_channels*image_size**2
+        # self.fcE = MLP(input_size=image_channels*image_size**2, output_size=fc_units, layers=fc_layers-1,
+        #                hid_size=fc_units, drop=fc_drop, batch_norm=fc_bn, nl=fc_nl, bias=bias,
+        #                excitability=excitability, excit_buffer=excit_buffer, gated=gated)
+        self.fcE = models.resnet18(pretrained=True)
+
+        # mlp_output_size = fc_units if fc_layers > 1 else image_channels*image_size**2
+        mlp_output_size = 512
 
         # classifier
         self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
+        self.fcE.fc = self.classifier
 
     def list_init_layers(self):
         """
@@ -55,14 +61,20 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
 
     @property
     def name(self):
-        return "{}_c{}".format(self.fcE.name, self.classes)
+        # return "{}_c{}".format(self.fcE.name, self.classes)
+        return 'whiteBbird'
 
     def forward(self, x):
-        final_features = self.fcE(self.flatten(x))
-        return self.classifier(final_features)
+
+        return self.fcE(x)
 
     def feature_extractor(self, images):
-        return self.fcE(self.flatten(images))
+        # feature = self.
+        # return self.fcE(self.flatten(images))
+        feature_layers = list(self.fcE.children())[:-2]
+        feature_extractor = nn.Sequential(*feature_layers)
+        origin = feature_extractor(images)
+        return origin.squeeze(       )
 
     def train_a_batch(self, x, y, scores=None, x_=None, y_=None, scores_=None, rnt=0.5, active_classes=None, task=1):
         """Train model for one batch ([x],[y]), possibly supplemented with replayed data ([x_],[y_/scores_]).

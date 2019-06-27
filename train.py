@@ -24,7 +24,6 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
     [generator]         None or <nn.Module>, if a seperate generative model should be trained (for [gen_iters] per task)
     [*_cbs]             <list> of call-back functions to evaluate training-progress'''
 
-
     # Set model in training-mode
     model.train()
 

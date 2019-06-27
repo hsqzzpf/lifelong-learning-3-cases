@@ -109,8 +109,7 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
         # set mode of model back
         self.train(mode=mode)
 
-
-    ####----CLASSIFICATION----####
+    # ----CLASSIFICATION---- #
 
     def classify_with_exemplars(self, x, allowed_classes=None):
         """Classify images by nearest-means-of-exemplars (after transform to feature representation)

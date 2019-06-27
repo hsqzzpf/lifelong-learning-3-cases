@@ -37,16 +37,14 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         # flatten image to 2D-tensor
         self.flatten = utils.Flatten()
 
-        # fully connected hidden layers
         # self.fcE = MLP(input_size=image_channels*image_size**2, output_size=fc_units, layers=fc_layers-1,
         #                hid_size=fc_units, drop=fc_drop, batch_norm=fc_bn, nl=fc_nl, bias=bias,
         #                excitability=excitability, excit_buffer=excit_buffer, gated=gated)
-        self.fcE = models.resnet18(pretrained=True)
-
         # mlp_output_size = fc_units if fc_layers > 1 else image_channels*image_size**2
-        mlp_output_size = 512
+        # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
 
-        # classifier
+        self.fcE = models.resnet18(pretrained=True)
+        mlp_output_size = 512
         self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
         self.fcE.fc = self.classifier
 
@@ -66,15 +64,18 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
 
     def forward(self, x):
 
+        # final_features = self.fcE(self.flatten(x))
+        # return self.classifier(final_features)
+
         return self.fcE(x)
 
     def feature_extractor(self, images):
-        # feature = self.
         # return self.fcE(self.flatten(images))
+
         feature_layers = list(self.fcE.children())[:-2]
         feature_extractor = nn.Sequential(*feature_layers)
         origin = feature_extractor(images)
-        return origin.squeeze(       )
+        return origin.squeeze()
 
     def train_a_batch(self, x, y, scores=None, x_=None, y_=None, scores_=None, rnt=0.5, active_classes=None, task=1):
         """Train model for one batch ([x],[y]), possibly supplemented with replayed data ([x_],[y_/scores_]).
@@ -140,7 +141,6 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
             precision = predL = None
             # -> it's possible there is only "replay" [i.e., for offline with incremental task learning]
 
-
         ## --(2)-- REPLAYED DATA --##
 
         if x_ is not None:
@@ -181,12 +181,12 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
                         binary_targets_ = utils.to_one_hot(y_[replay_id].cpu(), y_hat.size(1)).to(y_[replay_id].device)
                         predL_r[replay_id] = F.binary_cross_entropy_with_logits(
                             input=y_hat, target=binary_targets_, reduction='none'
-                        ).sum(dim=1).mean()     #--> sum over classes, then average over batch
+                        ).sum(dim=1).mean()     # --> sum over classes, then average over batch
                     else:
                         predL_r[replay_id] = F.cross_entropy(y_hat, y_[replay_id], reduction='elementwise_mean')
                 if (scores_ is not None) and (scores_[replay_id] is not None):
-                    # n_classes_to_consider = scores.size(1) #--> with this version, no zeroes are added to [scores]!
-                    n_classes_to_consider = y_hat.size(1)    #--> zeros will be added to [scores] to make it this size!
+                    # n_classes_to_consider = scores.size(1) # --> with this version, no zeroes are added to [scores]!
+                    n_classes_to_consider = y_hat.size(1)    # --> zeros will be added to [scores] to make it this size!
                     kd_fn = utils.loss_fn_kd_binary if self.binaryCE else utils.loss_fn_kd
                     distilL_r[replay_id] = kd_fn(scores=y_hat[:, :n_classes_to_consider],
                                                  target_scores=scores_[replay_id], T=self.KD_temp)

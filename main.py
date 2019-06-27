@@ -21,7 +21,7 @@ from replayer import Replayer
 
 parser = argparse.ArgumentParser('./main.py', description='Run individual continual learning experiment.')
 parser.add_argument('--get-stamp', action='store_true', help='print param-stamp & exit')
-parser.add_argument('--seed', type=int, default=0, help='random seed (for each random-module used)')
+parser.add_argument('--seed', type=int, default=1, help='random seed (for each random-module used)')
 parser.add_argument('--no-gpus', action='store_false', dest='cuda', help="don't use GPUs")
 parser.add_argument('--data-dir', type=str, default='./datasets', dest='d_dir', help="default: %(default)s")
 parser.add_argument('--plot-dir', type=str, default='./plots', dest='p_dir', help="default: %(default)s")
@@ -29,7 +29,8 @@ parser.add_argument('--results-dir', type=str, default='./results', dest='r_dir'
 
 # expirimental task parameters
 task_params = parser.add_argument_group('Task Parameters')
-task_params.add_argument('--experiment', type=str, default='splitMNIST', choices=['permMNIST', 'splitMNIST'])
+task_params.add_argument('--experiment', type=str, default='CIFAR100-animal', choices=['permMNIST', 'splitMNIST',
+                                                                               'CIFAR10', 'CIFAR100-animal'])
 task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
 task_params.add_argument('--tasks', type=int, default=5, help='number of tasks')
 
@@ -54,7 +55,7 @@ train_params = parser.add_argument_group('Training Parameters')
 train_params.add_argument('--iters', type=int, default=2000, help="# batches to optimize solver")
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=128, help="batch-size")
-train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='sgd')
+train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')

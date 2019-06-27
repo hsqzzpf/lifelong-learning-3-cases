@@ -54,9 +54,9 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
             previous_datasets = train_datasets
 
         # Add exemplars (if available) to current dataset (if requested)
-        if add_exemplars and task>1:
+        if add_exemplars and task > 1:
             # ---------- ADHOC SOLUTION: permMNIST needs transform to tensor, while splitMNIST does not ---------- #
-            if len(train_datasets)>6:
+            if len(train_datasets) > 6:
                 target_transform = (lambda y, x=classes_per_task: torch.tensor(y % x)) if (
                         scenario == "domain"
                 ) else (lambda y: torch.tensor(y))
@@ -81,9 +81,11 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
         # Find [active_classes]
         active_classes = None  # -> for Domain-IL scenario, always all classes are active
         if scenario == "task":
+
             # -for Task-IL scenario, create <list> with for all tasks so far a <list> with the active classes
             active_classes = [list(range(classes_per_task * i, classes_per_task * (i + 1))) for i in range(task)]
         elif scenario == "class":
+
             # -for Class-IL scenario, create one <list> with active classes of all tasks so far
             active_classes = list(range(classes_per_task * task))
 
@@ -137,16 +139,15 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                                                                           batch_size_to_use, cuda=cuda, drop_last=True))
                         iters_left_previous = len(data_loader_previous)
 
-
             # -----------------Collect data------------------#
 
-            #####-----CURRENT BATCH-----#####
+            # -----CURRENT BATCH----- #
             if replay_mode=="offline" and scenario=="task":
                 x = y = scores = None
             else:
-                x, y = next(data_loader)                                    #--> sample training data of current task
-                y = y-classes_per_task*(task-1) if scenario=="task" else y  #--> ITL: adjust y-targets to 'active range'
-                x, y = x.to(device), y.to(device)                           #--> transfer them to correct device
+                x, y = next(data_loader)                                    # --> sample training data of current task
+                y = y-classes_per_task*(task-1) if scenario == "task" else y  # --> ITL: adjust y-targets to 'active range'
+                x, y = x.to(device), y.to(device)                           # --> transfer them to correct device
                 # If --bce, --bce-distill & scenario=="class", calculate scores of current batch with previous model
                 binary_distillation = hasattr(model, "binaryCE") and model.binaryCE and model.binaryCE_distill
                 if binary_distillation and scenario=="class" and (previous_model is not None):

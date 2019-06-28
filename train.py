@@ -98,7 +98,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
         # Initialize # iters left on current data-loader(s)
         iters_left = iters_left_previous = 1
         if scenario == "task":
-            up_to_task = task if replay_mode=="offline" else task-1
+            up_to_task = task if replay_mode == "offline" else task-1
             iters_left_previous = [1]*up_to_task
             data_loader_previous = [None]*up_to_task
 
@@ -119,8 +119,8 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                 #      [training_dataset] is training-set of current task with stored exemplars added (if requested)
                 iters_left = len(data_loader)
             if Exact:
-                if scenario=="task":
-                    up_to_task = task if replay_mode=="offline" else task-1
+                if scenario == "task":
+                    up_to_task = task if replay_mode == "offline" else task-1
                     batch_size_replay = int(np.ceil(batch_size/up_to_task)) if (up_to_task>1) else batch_size
                     # -in Task-IL scenario, need separate replay for each task
                     for task_id in range(up_to_task):
@@ -133,7 +133,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                             iters_left_previous[task_id] = len(data_loader_previous[task_id])
                 else:
                     iters_left_previous -= 1
-                    if iters_left_previous==0:
+                    if iters_left_previous == 0:
                         batch_size_to_use = min(batch_size, len(ConcatDataset(previous_datasets)))
                         data_loader_previous = iter(utils.get_data_loader(ConcatDataset(previous_datasets),
                                                                           batch_size_to_use, cuda=cuda, drop_last=True))
@@ -142,7 +142,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
             # -----------------Collect data------------------#
 
             # -----CURRENT BATCH----- #
-            if replay_mode=="offline" and scenario=="task":
+            if replay_mode == "offline" and scenario == "task":
                 x = y = scores = None
             else:
                 x, y = next(data_loader)                                    # --> sample training data of current task
@@ -150,32 +150,31 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                 x, y = x.to(device), y.to(device)                           # --> transfer them to correct device
                 # If --bce, --bce-distill & scenario=="class", calculate scores of current batch with previous model
                 binary_distillation = hasattr(model, "binaryCE") and model.binaryCE and model.binaryCE_distill
-                if binary_distillation and scenario=="class" and (previous_model is not None):
+                if binary_distillation and scenario == "class" and (previous_model is not None):
                     with torch.no_grad():
                         scores = previous_model(x)[:, :(classes_per_task * (task - 1))]
                 else:
                     scores = None
 
-
-            #####-----REPLAYED BATCH-----#####
+            # -----REPLAYED BATCH----- #
             if not Exact and not Generative and not Current:
-                x_ = y_ = scores_ = None   #-> if no replay
+                x_ = y_ = scores_ = None   # -> if no replay
 
-            ##-->> Exact Replay <<--##
+            # -->> Exact Replay <<-- ##
             if Exact:
                 scores_ = None
                 if scenario in ("domain", "class"):
                     # Sample replayed training data, move to correct device
                     x_, y_ = next(data_loader_previous)
                     x_ = x_.to(device)
-                    y_ = y_.to(device) if (model.replay_targets=="hard") else None
+                    y_ = y_.to(device) if (model.replay_targets == "hard") else None
                     # If required, get target scores (i.e, [scores_]         -- using previous model, with no_grad()
-                    if (model.replay_targets=="soft"):
+                    if model.replay_targets == "soft":
                         with torch.no_grad():
                             scores_ = previous_model(x_)
-                        scores_ = scores_[:, :(classes_per_task*(task-1))] if scenario=="class" else scores_
-                        #-> when scenario=="class", zero probabilities will be added in the [utils.loss_fn_kd]-function
-                elif scenario=="task":
+                        scores_ = scores_[:, :(classes_per_task*(task-1))] if scenario == "class" else scores_
+                        # -> when scenario=="class", zero probabilities will be added in the [utils.loss_fn_kd]-function
+                elif scenario == "task":
                     # Sample replayed training data, wrap in (cuda-)Variables and store in lists
                     x_ = list()
                     y_ = list()
@@ -184,13 +183,13 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                         x_temp, y_temp = next(data_loader_previous[task_id])
                         x_.append(x_temp.to(device))
                         # -only keep [y_] if required (as otherwise unnecessary computations will be done)
-                        if model.replay_targets=="hard":
+                        if model.replay_targets == "hard":
                             y_temp = y_temp - (classes_per_task*task_id) #-> adjust y-targets to 'active range'
                             y_.append(y_temp.to(device))
                         else:
                             y_.append(None)
                     # If required, get target scores (i.e, [scores_]         -- using previous model
-                    if (model.replay_targets=="soft") and (previous_model is not None):
+                    if (model.replay_targets == "soft") and (previous_model is not None):
                         scores_ = list()
                         for task_id in range(up_to_task):
                             with torch.no_grad():
@@ -198,7 +197,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                             scores_temp = scores_temp[:, (classes_per_task*task_id):(classes_per_task*(task_id+1))]
                             scores_.append(scores_temp)
 
-            ##-->> Generative / Current Replay <<--##
+            # -->> Generative / Current Replay <<--##
             if Generative or Current:
                 # Get replayed data (i.e., [x_]) -- either current data or use previous generator
                 x_ = x if Current else previous_generator.sample(batch_size)
@@ -225,7 +224,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                             previous_model.apply_XdGmask(task=task_id + 1)
                             with torch.no_grad():
                                 all_scores_ = previous_model(x_)
-                        if scenario=="domain":
+                        if scenario == "domain":
                             temp_scores_ = all_scores_
                         else:
                             temp_scores_ = all_scores_[:,

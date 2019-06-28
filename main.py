@@ -32,7 +32,7 @@ task_params = parser.add_argument_group('Task Parameters')
 task_params.add_argument('--experiment', type=str, default='CIFAR100-animal', choices=['permMNIST', 'splitMNIST',
                                                                                'CIFAR10', 'CIFAR100-animal'])
 task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
-task_params.add_argument('--tasks', type=int, default=5, help='number of tasks')
+task_params.add_argument('--tasks', type=int, default=9, help='number of tasks')
 
 # specify loss functions to be used
 loss_params = parser.add_argument_group('Loss Parameters')
@@ -55,7 +55,7 @@ train_params = parser.add_argument_group('Training Parameters')
 train_params.add_argument('--iters', type=int, default=2000, help="# batches to optimize solver")
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=128, help="batch-size")
-train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
+train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='sgd')
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
@@ -218,7 +218,8 @@ def run(args):
     if model.optim_type in ("adam", "adam_reset"):
         model.optimizer = optim.Adam(model.optim_list, betas=(0.9, 0.999))
     elif model.optim_type == "sgd":
-        model.optimizer = optim.SGD(model.optim_list)
+        model.optimizer = optim.SGD(model.optim_list, lr=0.001, momentum=0.9, weight_decay=0.0001,
+                                    nesterov=True)
     else:
         raise ValueError("Unrecognized optimizer, '{}' is not currently a valid option".format(args.optimizer))
 
@@ -412,19 +413,18 @@ def run(args):
     time_file.write('{}\n'.format(training_time))
     time_file.close()
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #----------------------#
-    #----- EVALUATION -----#
-    #----------------------#
+    # ---------------------- #
+    # ----- EVALUATION ----- #
+    # ---------------------- #
 
     print("\n\n--> Evaluation ({}-incremental learning scenario):".format(args.scenario))
 
     # Evaluate precision of final model on full test-set
     precs = [evaluate.validate(
         model, test_datasets[i], verbose=False, test_size=None, task=i+1, with_exemplars=False,
-        allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario=="task" else None
+        allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario == "task" else None
     ) for i in range(args.tasks)]
     print("\n Precision on test-set (softmax classification):")
     for i in range(args.tasks):
@@ -436,7 +436,7 @@ def run(args):
     if args.use_exemplars:
         precs = [evaluate.validate(
             model, test_datasets[i], verbose=False, test_size=None, task=i+1, with_exemplars=True,
-            allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario=="task" else None
+            allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario == "task" else None
         ) for i in range(args.tasks)]
         print("\n Precision on test-set (classification using exemplars):")
         for i in range(args.tasks):

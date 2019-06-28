@@ -274,7 +274,7 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
             # mnist_test = get_dataset('CIFAR10', type="test", dir=data_dir, target_transform=target_transform,
             #                          verbose=verbose)
 
-            class_split = ClassSplit(45, [], random_seed=2)
+            class_split = ClassSplit(45, [], random_seed=22)
             trainset = FlexAnimalSet(join('datasets', 'CIFAR100-animal'), True, class_split, [x for x in range(45)], None)
             testset = FlexAnimalSet(join('datasets', 'CIFAR100-animal'), False, class_split, [x for x in range(45)], None)
 

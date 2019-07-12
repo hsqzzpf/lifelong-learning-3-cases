@@ -64,6 +64,7 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
                 ) else (lambda y: torch.tensor(y))
             else:
                 target_transform = (lambda y, x=classes_per_task: y%x) if scenario=="domain" else None
+            target_transform = (lambda y, x=classes_per_task: y % x) if scenario == "domain" else None
             # ---------------------------------------------------------------------------------------------------- #
             exemplar_dataset = ExemplarDataset(model.exemplar_sets, target_transform=target_transform)
             training_dataset = ConcatDataset([train_dataset, exemplar_dataset])

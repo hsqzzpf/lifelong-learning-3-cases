@@ -1,19 +1,18 @@
 import torch
 from torch.nn import functional as F
-
 import torch.nn as nn
-
-from linear_nets import MLP,fc_layer
+from linear_nets import MLP, fc_layer
 from exemplars import ExemplarHandler
 from continual_learner import ContinualLearner
 from replayer import Replayer
 import utils
-
 from torchvision import models
 
 
 class Classifier(ContinualLearner, Replayer, ExemplarHandler):
-    '''Model for classifying images, "enriched" as "ContinualLearner"-, Replayer- and ExemplarHandler-object.'''
+    """
+    Model for classifying images, "enriched" as "ContinualLearner"-, Replayer- and ExemplarHandler-object.
+    """
 
     def __init__(self, image_size, image_channels, classes,
                  fc_layers=3, fc_units=1000, fc_drop=0, fc_bn=True, fc_nl="relu", gated=False,
@@ -30,20 +29,18 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         self.binaryCE_distill = binaryCE_distill
 
         # check whether there is at least 1 fc-layer
-        if fc_layers<1:
+        if fc_layers < 1:
             raise ValueError("The classifier needs to have at least 1 fully-connected layer.")
 
-
-        ######------SPECIFY MODEL------######
+        # ------SPECIFY MODEL------#
 
         # flatten image to 2D-tensor
         self.flatten = utils.Flatten()
 
-        # fully connected hidden layers
         # self.fcE = MLP(input_size=image_channels*image_size**2, output_size=fc_units, layers=fc_layers-1,
         #                hid_size=fc_units, drop=fc_drop, batch_norm=fc_bn, nl=fc_nl, bias=bias,
         #                excitability=excitability, excit_buffer=excit_buffer, gated=gated)
-        # mlp_output_size = fc_units if fc_layers>1 else image_channels*image_size**2
+        # mlp_output_size = fc_units if fc_layers > 1 else image_channels*image_size**2
         # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
 
         self.fcE = models.resnet18(pretrained=True)
@@ -52,7 +49,9 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         self.fcE.fc = self.classifier
 
     def list_init_layers(self):
-        '''Return list of modules whose parameters could be initialized differently (i.e., conv- or fc-layers).'''
+        """
+        Return list of modules whose parameters could be initialized differently (i.e., conv- or fc-layers).
+        """
         list = []
         list += self.fcE.list_init_layers()
         list += self.classifier.list_init_layers()
@@ -63,8 +62,8 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         # return "{}_c{}".format(self.fcE.name, self.classes)
         return 'whiteBbird'
 
-
     def forward(self, x):
+
         # final_features = self.fcE(self.flatten(x))
         # return self.classifier(final_features)
 
@@ -72,13 +71,14 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
 
     def feature_extractor(self, images):
         # return self.fcE(self.flatten(images))
+
         feature_layers = list(self.fcE.children())[:-2]
         feature_extractor = nn.Sequential(*feature_layers)
         origin = feature_extractor(images)
         return origin.squeeze()
 
     def train_a_batch(self, x, y, scores=None, x_=None, y_=None, scores_=None, rnt=0.5, active_classes=None, task=1):
-        '''Train model for one batch ([x],[y]), possibly supplemented with replayed data ([x_],[y_/scores_]).
+        """Train model for one batch ([x],[y]), possibly supplemented with replayed data ([x_],[y_/scores_]).
 
         [x]               <tensor> batch of inputs (could be None, in which case only 'replayed' data is used)
         [y]               <tensor> batch of corresponding labels
@@ -89,7 +89,8 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         [scores_]         None or (<list> of) <tensor> 2Dtensor:[batch]x[classes] predicted "scores"/"logits" for [x_]
         [rnt]             <number> in [0,1], relative importance of new task
         [active_classes]  None or (<list> of) <list> with "active" classes
-        [task]            <int>, for setting task-specific mask'''
+        [task]            <int>, for setting task-specific mask
+        """
 
         # Set model to training-mode
         self.train()
@@ -97,8 +98,7 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         # Reset optimizer
         self.optimizer.zero_grad()
 
-
-        ##--(1)-- CURRENT DATA --##
+        # --(1)-- CURRENT DATA --#
 
         if x is not None:
             # If requested, apply correct task-specific mask
@@ -109,7 +109,7 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
             y_hat = self(x)
             # -if needed, remove predictions for classes not in current task
             if active_classes is not None:
-                class_entries = active_classes[-1] if type(active_classes[0])==list else active_classes
+                class_entries = active_classes[-1] if type(active_classes[0]) == list else active_classes
                 y_hat = y_hat[:, class_entries]
 
             # Calculate prediction loss
@@ -118,11 +118,11 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
                 binary_targets = utils.to_one_hot(y.cpu(), y_hat.size(1)).to(y.device)
                 if self.binaryCE_distill and (scores is not None):
                     classes_per_task = int(y_hat.size(1) / task)
-                    binary_targets = binary_targets[:, -(classes_per_task):]
+                    binary_targets = binary_targets[:, -classes_per_task:]
                     binary_targets = torch.cat([torch.sigmoid(scores / self.KD_temp), binary_targets], dim=1)
                 predL = None if y is None else F.binary_cross_entropy_with_logits(
                     input=y_hat, target=binary_targets, reduction='none'
-                ).sum(dim=1).mean()     #--> sum over classes, then average over batch
+                ).sum(dim=1).mean()     # --> sum over classes, then average over batch
             else:
                 # -multiclass prediction loss
                 predL = None if y is None else F.cross_entropy(input=y_hat, target=y, reduction='elementwise_mean')
@@ -141,8 +141,7 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
             precision = predL = None
             # -> it's possible there is only "replay" [i.e., for offline with incremental task learning]
 
-
-        ##--(2)-- REPLAYED DATA --##
+        ## --(2)-- REPLAYED DATA --##
 
         if x_ is not None:
             # In the Task-IL scenario, [y_] or [scores_] is a list and [x_] needs to be evaluated on each of them
@@ -182,12 +181,12 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
                         binary_targets_ = utils.to_one_hot(y_[replay_id].cpu(), y_hat.size(1)).to(y_[replay_id].device)
                         predL_r[replay_id] = F.binary_cross_entropy_with_logits(
                             input=y_hat, target=binary_targets_, reduction='none'
-                        ).sum(dim=1).mean()     #--> sum over classes, then average over batch
+                        ).sum(dim=1).mean()     # --> sum over classes, then average over batch
                     else:
                         predL_r[replay_id] = F.cross_entropy(y_hat, y_[replay_id], reduction='elementwise_mean')
                 if (scores_ is not None) and (scores_[replay_id] is not None):
-                    # n_classes_to_consider = scores.size(1) #--> with this version, no zeroes are added to [scores]!
-                    n_classes_to_consider = y_hat.size(1)    #--> zeros will be added to [scores] to make it this size!
+                    # n_classes_to_consider = scores.size(1) # --> with this version, no zeroes are added to [scores]!
+                    n_classes_to_consider = y_hat.size(1)    # --> zeros will be added to [scores] to make it this size!
                     kd_fn = utils.loss_fn_kd_binary if self.binaryCE else utils.loss_fn_kd
                     distilL_r[replay_id] = kd_fn(scores=y_hat[:, :n_classes_to_consider],
                                                  target_scores=scores_[replay_id], T=self.KD_temp)

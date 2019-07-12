@@ -21,7 +21,7 @@ from replayer import Replayer
 
 parser = argparse.ArgumentParser('./main.py', description='Run individual continual learning experiment.')
 parser.add_argument('--get-stamp', action='store_true', help='print param-stamp & exit')
-parser.add_argument('--seed', type=int, default=0, help='random seed (for each random-module used)')
+parser.add_argument('--seed', type=int, default=1, help='random seed (for each random-module used)')
 parser.add_argument('--no-gpus', action='store_false', dest='cuda', help="don't use GPUs")
 parser.add_argument('--data-dir', type=str, default='./datasets', dest='d_dir', help="default: %(default)s")
 parser.add_argument('--plot-dir', type=str, default='./plots', dest='p_dir', help="default: %(default)s")
@@ -30,9 +30,7 @@ parser.add_argument('--results-dir', type=str, default='./results', dest='r_dir'
 # expirimental task parameters
 task_params = parser.add_argument_group('Task Parameters')
 task_params.add_argument('--experiment', type=str, default='CIFAR100-animal', choices=['permMNIST', 'splitMNIST',
-                                                                                'CIFAR10',
-                                                                                'CIFAR100-animal',
-                                                                                'ImageNet'])
+                                                                               'CIFAR10', 'CIFAR100-animal'])
 task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
 task_params.add_argument('--tasks', type=int, default=9, help='number of tasks')
 
@@ -50,15 +48,14 @@ model_params.add_argument('--fc-drop', type=float, default=0., help="dropout pro
 model_params.add_argument('--fc-bn', type=str, default="no", help="use batch-norm in the fc-layers (no|yes)")
 model_params.add_argument('--fc-nl', type=str, default="relu", choices=["relu", "leakyrelu"])
 model_params.add_argument('--singlehead', action='store_true', help="for Task-IL: use a 'single-headed' output layer   "
-                                                                   " (instead of a 'multi-headed' one)")
+                                                                    " (instead of a 'multi-headed' one)")
 
 # training hyperparameters / initialization
 train_params = parser.add_argument_group('Training Parameters')
-train_params.add_argument('--iters', type=int, default=400, help="# batches to optimize solver")
+train_params.add_argument('--iters', type=int, default=50, help="# batches to optimize solver")
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=128, help="batch-size")
-train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
-train_params.add_argument('--random_seed', type=int, default=0)
+train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='sgd')
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
@@ -68,6 +65,7 @@ replay_choices = ['offline', 'exact', 'generative', 'none', 'current', 'exemplar
 replay_params.add_argument('--replay', type=str, default='none', choices=replay_choices)
 replay_params.add_argument('--distill', action='store_true', help="use distillation for replay?")
 replay_params.add_argument('--temp', type=float, default=2., dest='temp', help="temperature for distillation")
+
 # -generative model parameters (if separate model)
 genmodel_params = parser.add_argument_group('Generative Model Parameters')
 genmodel_params.add_argument('--g-z-dim', type=int, default=100, help='size of latent representation (default: 100)')
@@ -81,7 +79,7 @@ gen_params.add_argument('--lr-gen', type=float, help="learning rate generator (d
 # "memory allocation" parameters
 cl_params = parser.add_argument_group('Memory Allocation Parameters')
 cl_params.add_argument('--ewc', action='store_true', help="use 'EWC' (Kirkpatrick et al, 2017)")
-cl_params.add_argument('--lambda', type=float, default=5000.,dest="ewc_lambda", help="--> EWC: regularisation strength")
+cl_params.add_argument('--lambda', type=float, default=5000., dest="ewc_lambda", help="--> EWC: regularisation strength")
 cl_params.add_argument('--fisher-n', type=int, help="--> EWC: sample size estimating Fisher Information")
 cl_params.add_argument('--online', action='store_true', help="--> EWC: perform 'online EWC'")
 cl_params.add_argument('--gamma', type=float, default=1., help="--> EWC: forgetting coefficient (for 'online EWC')")
@@ -89,14 +87,14 @@ cl_params.add_argument('--emp-fi', action='store_true', help="--> EWC: estimate 
 cl_params.add_argument('--si', action='store_true', help="use 'Synaptic Intelligence' (Zenke, Poole et al, 2017)")
 cl_params.add_argument('--c', type=float, default=0.1, dest="si_c", help="--> SI: regularisation strength")
 cl_params.add_argument('--epsilon', type=float, default=0.1, dest="epsilon", help="--> SI: dampening parameter")
-cl_params.add_argument('--xdg', type=float, default=0., dest="gating_prop",help="XdG: prop neurons per layer to gate")
+cl_params.add_argument('--xdg', type=float, default=0., dest="gating_prop", help="XdG: prop neurons per layer to gate")
 
 # exemplar parameters
 icarl_params = parser.add_argument_group('Exemplar Parameters')
 icarl_params.add_argument('--icarl', action='store_true', help="bce-distill, use-exemplars & add-exemplars")
 icarl_params.add_argument('--use-exemplars', action='store_true', help="use exemplars for classification")
 icarl_params.add_argument('--add-exemplars', action='store_true', help="add exemplars to current task dataset")
-icarl_params.add_argument('--budget', type=int, default=6000, dest="budget", help="how many exemplars can be stored?")
+icarl_params.add_argument('--budget', type=int, default=2000, dest="budget", help="how many exemplars can be stored?")
 icarl_params.add_argument('--herding', action='store_true', help="use herding to select exemplars (instead of random)")
 icarl_params.add_argument('--norm-exemplars', action='store_true', help="normalize features/averages of exemplars")
 
@@ -112,7 +110,6 @@ eval_params.add_argument('--sample-log', type=int, default=500, metavar="N", hel
 eval_params.add_argument('--sample-n', type=int, default=64, help="# images to show")
 
 
-
 def run(args):
 
     # Set default arguments
@@ -120,11 +117,13 @@ def run(args):
     args.g_iters = args.iters if args.g_iters is None else args.g_iters
     args.g_fc_lay = args.fc_lay if args.g_fc_lay is None else args.g_fc_lay
     args.g_fc_uni = args.fc_units if args.g_fc_uni is None else args.g_fc_uni
+
     # -if [log_per_task], reset all logs
     if args.log_per_task:
         args.prec_log = args.iters
         args.loss_log = args.iters
         args.sample_log = args.iters
+
     # -if [iCaRL] is selected, select all accompanying options
     if hasattr(args, "icarl") and args.icarl:
         args.use_exemplars = True
@@ -132,21 +131,25 @@ def run(args):
         args.bce = True
         args.bce_distill = True
     # -if XdG is selected but not the Task-IL scenario, give error
-    if (not args.scenario=="task") and args.gating_prop>0:
+    if (not args.scenario == "task") and args.gating_prop > 0:
         raise ValueError("'XdG' is only compatible with the Task-IL scenario.")
+
     # -if EWC, SI or XdG is selected together with 'feedback', give error
-    if args.feedback and (args.ewc or args.si or args.gating_prop>0 or args.icarl):
+    if args.feedback and (args.ewc or args.si or args.gating_prop > 0 or args.icarl):
         raise NotImplementedError("EWC, SI, XdG and iCaRL are not supported with feedback connections.")
+
     # -if binary classification loss is selected together with 'feedback', give error
     if args.feedback and args.bce:
         raise NotImplementedError("Binary classification loss not supported with feedback connections.")
+
     # -if XdG is selected together with both replay and EWC, give error (either one of them alone with XdG is fine)
-    if args.gating_prop>0 and (not args.replay=="none") and (args.ewc or args.si):
+    if args.gating_prop > 0 and (not args.replay == "none") and (args.ewc or args.si):
         raise NotImplementedError("XdG is not supported with both '{}' replay and EWC / SI.".format(args.replay))
-        #--> problem is that applying different task-masks interferes with gradient calculation
+        # --> problem is that applying different task-masks interferes with gradient calculation
         #    (should be possible to overcome by calculating backward step on EWC/SI-loss also for each mask separately)
+
     # -if 'BCEdistill' is selected for other than scenario=="class", give error
-    if args.bce_distill and not args.scenario=="class":
+    if args.bce_distill and not args.scenario == "class":
         raise ValueError("BCE-distill can only be used for class-incremental learning.")
     # -create plots- and results-directories if needed
     if not os.path.isdir(args.r_dir):
@@ -157,8 +160,8 @@ def run(args):
     scenario = args.scenario
     # If Task-IL scenario is chosen with single-headed output layer, set args.scenario to "domain"
     # (but note that when XdG is used, task-identity information is being used so the actual scenario is still Task-IL)
-    if args.singlehead and args.scenario=="task":
-        scenario="domain"
+    if args.singlehead and args.scenario == "task":
+        scenario = "domain"
 
     # If only want param-stamp, get it printed to screen and exit
     if hasattr(args, "get_stamp") and args.get_stamp:
@@ -175,39 +178,37 @@ def run(args):
     if cuda:
         torch.cuda.manual_seed(args.seed)
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #----------------#
-    #----- DATA -----#
-    #----------------#
+    # ----------------#
+    # ----- DATA -----#
+    # ----------------#
 
     # Prepare data for chosen experiment
     (train_datasets, test_datasets), config, classes_per_task = get_multitask_experiment(
         name=args.experiment, scenario=scenario, tasks=args.tasks, data_dir=args.d_dir,
-        verbose=True, exception=True if args.seed==0 else False, random_seed=args.random_seed
+        verbose=True, exception=True if args.seed == 0 else False,
     )
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #------------------------------#
-    #----- MODEL (CLASSIFIER) -----#
-    #------------------------------#
+    # ------------------------------#
+    # ----- MODEL (CLASSIFIER) -----#
+    # ------------------------------#
 
     # Define main model (i.e., classifier, if requested with feedback connections)
     if args.feedback:
         model = AutoEncoder(
             image_size=config['size'], image_channels=config['channels'], classes=config['classes'],
             fc_layers=args.fc_lay, fc_units=args.fc_units, z_dim=args.z_dim,
-            fc_drop=args.fc_drop, fc_bn=True if args.fc_bn=="yes" else False, fc_nl=args.fc_nl,
+            fc_drop=args.fc_drop, fc_bn=True if args.fc_bn == "yes" else False, fc_nl=args.fc_nl,
         ).to(device)
-        model.lamda_pl = 1. #--> to make that this VAE is also trained to classify
+        model.lamda_pl = 1.  # --> to make that this VAE is also trained to classify
     else:
         model = Classifier(
             image_size=config['size'], image_channels=config['channels'], classes=config['classes'],
             fc_layers=args.fc_lay, fc_units=args.fc_units, fc_drop=args.fc_drop, fc_nl=args.fc_nl,
-            fc_bn=True if args.fc_bn=="yes" else False, excit_buffer=True if args.gating_prop>0 else False,
+            fc_bn=True if args.fc_bn == "yes" else False, excit_buffer=True if args.gating_prop > 0 else False,
             binaryCE=args.bce, binaryCE_distill=args.bce_distill,
         ).to(device)
 
@@ -216,17 +217,17 @@ def run(args):
     model.optim_type = args.optimizer
     if model.optim_type in ("adam", "adam_reset"):
         model.optimizer = optim.Adam(model.optim_list, betas=(0.9, 0.999))
-    elif model.optim_type=="sgd":
-        model.optimizer = optim.SGD(model.optim_list)
+    elif model.optim_type == "sgd":
+        model.optimizer = optim.SGD(model.optim_list, lr=0.001, momentum=0.9, weight_decay=0.0001,
+                                    nesterov=True)
     else:
         raise ValueError("Unrecognized optimizer, '{}' is not currently a valid option".format(args.optimizer))
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #----------------------------------#
-    #----- CL-STRATEGY: EXEMPLARS -----#
-    #----------------------------------#
+    # ----------------------------------#
+    # ----- CL-STRATEGY: EXEMPLARS -----#
+    # ----------------------------------#
 
     # Store in model whether, how many and in what way to store exemplars
     if isinstance(model, ExemplarHandler) and (args.use_exemplars or args.add_exemplars or args.replay=="exemplars"):
@@ -234,12 +235,11 @@ def run(args):
         model.norm_exemplars = args.norm_exemplars
         model.herding = args.herding
 
+    # ------------------------------------------------------------------------------------------------- #
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #-----------------------------------#
-    #----- CL-STRATEGY: ALLOCATION -----#
-    #-----------------------------------#
+    # ----------------------------------- #
+    # ----- CL-STRATEGY: ALLOCATION ----- #
+    # ----------------------------------- #
 
     # Elastic Weight Consolidation (EWC)
     if isinstance(model, ContinualLearner):
@@ -257,7 +257,7 @@ def run(args):
             model.epsilon = args.epsilon
 
     # XdG: create for every task a "mask" for each hidden fully connected layer
-    if isinstance(model, ContinualLearner) and args.gating_prop>0:
+    if isinstance(model, ContinualLearner) and args.gating_prop > 0:
         mask_dict = {}
         excit_buffer_list = []
         for task_id in range(args.tasks):
@@ -272,12 +272,11 @@ def run(args):
         model.mask_dict = mask_dict
         model.excit_buffer_list = excit_buffer_list
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #-------------------------------#
-    #----- CL-STRATEGY: REPLAY -----#
-    #-------------------------------#
+    # -------------------------------#
+    # ----- CL-STRATEGY: REPLAY -----#
+    # -------------------------------#
 
     # Use distillation loss (i.e., soft targets) for replayed data? (and set temperature)
     if isinstance(model, Replayer):
@@ -285,13 +284,13 @@ def run(args):
         model.KD_temp = args.temp
 
     # If needed, specify separate model for the generator
-    train_gen = True if (args.replay=="generative" and not args.feedback) else False
+    train_gen = True if (args.replay == "generative" and not args.feedback) else False
     if train_gen:
         # -specify architecture
         generator = AutoEncoder(
             image_size=config['size'], image_channels=config['channels'],
             fc_layers=args.g_fc_lay, fc_units=args.g_fc_uni, z_dim=args.g_z_dim, classes=config['classes'],
-            fc_drop=args.fc_drop, fc_bn=True if args.fc_bn=="yes" else False, fc_nl=args.fc_nl,
+            fc_drop=args.fc_drop, fc_bn=True if args.fc_bn == "yes" else False, fc_nl=args.fc_nl,
         ).to(device)
         # -set optimizer(s)
         generator.optim_list = [{'params': filter(lambda p: p.requires_grad, generator.parameters()), 'lr': args.lr_gen}]
@@ -303,17 +302,16 @@ def run(args):
     else:
         generator = None
 
+    # ------------------------------------------------------------------------------------------------- #
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #---------------------#
-    #----- REPORTING -----#
-    #---------------------#
+    # --------------------- #
+    # ----- REPORTING ----- #
+    # --------------------- #
 
     # Get parameter-stamp (and print on screen)
     param_stamp = get_param_stamp(
-        args, model.name, verbose=True, replay=True if (not args.replay=="none") else False,
-        replay_model_name=generator.name if (args.replay=="generative" and not args.feedback) else None,
+        args, model.name, verbose=True, replay=True if (not args.replay == "none") else False,
+        replay_model_name=generator.name if (args.replay == "generative" and not args.feedback) else None,
     )
 
     # Print some model-characteristics on the screen
@@ -335,7 +333,7 @@ def run(args):
             fb="1M-" if args.feedback else "", replay="{}{}".format(args.replay, "D" if args.distill else ""),
             syn="-si{}".format(args.si_c) if args.si else "",
             ewc="-ewc{}{}".format(args.ewc_lambda,"-O{}".format(args.gamma) if args.online else "") if args.ewc else "",
-            xdg="" if args.gating_prop==0 else "-XdG{}".format(args.gating_prop),
+            xdg="" if args.gating_prop == 0 else "-XdG{}".format(args.gating_prop),
             icarl="-iCaRL" if (args.use_exemplars and args.add_exemplars and args.bce and args.bce_distill) else "",
             bud="-bud{}".format(args.budget) if (
                     args.use_exemplars or args.add_exemplars or args.replay=="exemplars"
@@ -347,18 +345,17 @@ def run(args):
     else:
         visdom = visdom_exemplars = None
 
+    # ------------------------------------------------------------------------------------------------- #
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #---------------------#
-    #----- CALLBACKS -----#
-    #---------------------#
+    # --------------------- #
+    # ----- CALLBACKS ----- #
+    # --------------------- #
 
     # Callbacks for reporting on and visualizing loss
     generator_loss_cbs = [
         cb._VAE_loss_cb(log=args.loss_log, visdom=visdom, model=model if args.feedback else generator, tasks=args.tasks,
                         iters_per_task=args.iters if args.feedback else args.g_iters,
-                        replay=False if args.replay=="none" else True)
+                        replay=False if args.replay == "none" else True)
     ] if (train_gen or args.feedback) else [None]
     solver_loss_cbs = [
         cb._solver_loss_cb(log=args.loss_log, visdom=visdom, model=model, tasks=args.tasks,
@@ -416,31 +413,36 @@ def run(args):
     time_file.write('{}\n'.format(training_time))
     time_file.close()
 
+    # -------------------------------------------------------------------------------------------------#
 
-    #-------------------------------------------------------------------------------------------------#
+    if not os.path.exists('Experiment Result'):
+        os.makedirs('Experiment Result')
 
-    if not os.path.exists('record'):
-        os.makedirs('record')
-
-    method = ""
+    method = ''
 
     if args.icarl:
         method += 'icarl, '
     if args.replay != 'None':
-        method += args.replay + ', '
+        method += args.replay
+    if args.ewc:
+        method += 'ewc, '
+    if args.online:
+        method += 'online, '
     if args.distill:
         method += 'distill, '
-    f = open('record/method-{}-randn-{}-scenario-{}.txt'.format(method, args.random_seed, args.scenario), 'a')
-    #----------------------#
-    #----- EVALUATION -----#
-    #----------------------#
+
+    f = open('Experiment Result/method-{}-randn-{}-scenario-{}.txt'.format(
+        method, args.random_seed, args.scenario), 'a')
+    # ---------------------- #
+    # ----- EVALUATION ----- #
+    # ---------------------- #
 
     print("\n\n--> Evaluation ({}-incremental learning scenario):".format(args.scenario))
     f.write("\n\n--> Evaluation ({}-incremental learning scenario):\n".format(args.scenario))
     # Evaluate precision of final model on full test-set
     precs = [evaluate.validate(
         model, test_datasets[i], verbose=False, test_size=None, task=i+1, with_exemplars=False,
-        allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario=="task" else None
+        allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario == "task" else None
     ) for i in range(args.tasks)]
     print("\n Precision on test-set (softmax classification):")
     f.write("\n Precision on test-set (softmax classification):\n")
@@ -455,7 +457,7 @@ def run(args):
     if args.use_exemplars:
         precs = [evaluate.validate(
             model, test_datasets[i], verbose=False, test_size=None, task=i+1, with_exemplars=True,
-            allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario=="task" else None
+            allowed_classes=list(range(classes_per_task*i, classes_per_task*(i+1))) if scenario == "task" else None
         ) for i in range(args.tasks)]
         print("\n Precision on test-set (classification using exemplars):")
         for i in range(args.tasks):
@@ -464,12 +466,11 @@ def run(args):
         print('=> average precision over all {} tasks: {:.4f}'.format(args.tasks, average_precs_ex))
     print("\n")
 
+    # ------------------------------------------------------------------------------------------------- #
 
-    #-------------------------------------------------------------------------------------------------#
-
-    #------------------#
-    #----- OUTPUT -----#
-    #------------------#
+    # ------------------ #
+    # ----- OUTPUT ----- #
+    # ------------------ #
 
     # Average precision on full test set
     output_file = open("{}/prec-{}.txt".format(args.r_dir, param_stamp), 'w')
@@ -532,8 +533,6 @@ def run(args):
 
         # -close pdf
         pp.close()
-
-
 
 
 if __name__ == '__main__':

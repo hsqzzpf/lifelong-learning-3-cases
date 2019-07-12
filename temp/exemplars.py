@@ -79,7 +79,7 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
             exemplar_features = torch.zeros_like(features[:min(n, n_max)])
             list_of_selected = []
             for k in range(min(n, n_max)):
-                if k > 0:
+                if k>0:
                     exemplar_sum = torch.sum(exemplar_features[:k], dim=0).unsqueeze(0)
                     features_means = (features + exemplar_sum)/(k+1)
                     # if self.norm_exemplars:
@@ -88,7 +88,7 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
                     features_dists = features_means - class_mean
                 else:
                     features_dists = features - class_mean
-                index_selected = np.argmin(torch.norm(features_dists, p=2, dim=1).cpu())
+                index_selected = np.argmin(torch.norm(features_dists, p=2, dim=1))
                 if index_selected in list_of_selected:
                     raise ValueError("Exemplars should not be repeated!!!!")
                 list_of_selected.append(index_selected)
@@ -109,8 +109,7 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
         # set mode of model back
         self.train(mode=mode)
 
-
-    ####----CLASSIFICATION----####
+    # ----CLASSIFICATION---- #
 
     def classify_with_exemplars(self, x, allowed_classes=None):
         """Classify images by nearest-means-of-exemplars (after transform to feature representation)

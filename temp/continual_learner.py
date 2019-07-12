@@ -7,10 +7,12 @@ import utils
 
 
 class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
-    '''Abstract module to add continual learning capabilities to a classifier.
+    """
+    Abstract module to add continual learning capabilities to a classifier.
 
     Adds methods for "context-dependent gating" (XdG), "elastic weight consolidation" (EWC) and
-    "synaptic intelligence" (SI) to its subclasses.'''
+    "synaptic intelligence" (SI) to its subclasses.
+    """
 
     def __init__(self):
         super().__init__()
@@ -20,16 +22,16 @@ class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
         self.excit_buffer_list = []  # -> <list> with excit-buffers for all hidden fully-connected layers
 
         # -SI:
-        self.si_c = 0           #-> hyperparam: how strong to weigh SI-loss ("regularisation strength")
-        self.epsilon = 0.1      #-> dampening parameter: bounds 'omega' when squared parameter-change goes to 0
+        self.si_c = 0            # -> hyperparam: how strong to weigh SI-loss ("regularisation strength")
+        self.epsilon = 0.1       # -> dampening parameter: bounds 'omega' when squared parameter-change goes to 0
 
         # -EWC:
-        self.ewc_lambda = 0     #-> hyperparam: how strong to weigh EWC-loss ("regularisation strength")
-        self.gamma = 1.         #-> hyperparam (online EWC): decay-term for old tasks' contribution to quadratic term
-        self.online = True      #-> "online" (=single quadratic term) or "offline" (=quadratic term per task) EWC
-        self.fisher_n = None    #-> sample size for estimating FI-matrix (if "None", full pass over dataset)
-        self.emp_FI = False     #-> if True, use provided labels to calculate FI ("empirical FI"); else predicted labels
-        self.EWC_task_count = 0 #-> keeps track of number of quadratic loss terms (for "offline EWC")
+        self.ewc_lambda = 0      # -> hyperparam: how strong to weigh EWC-loss ("regularisation strength")
+        self.gamma = 1.          # -> hyperparam (online EWC): decay-term for old tasks' contribution to quadratic term
+        self.online = True       # -> "online" (=single quadratic term) or "offline" (=quadratic term per task) EWC
+        self.fisher_n = None     # -> sample size for estimating FI-matrix (if "None", full pass over dataset)
+        self.emp_FI = False      # -> if True, use provided labels to calculate FI("empirical FI");else predicted labels
+        self.EWC_task_count = 0  # -> keeps track of number of quadratic loss terms (for "offline EWC")
 
     def _device(self):
         return next(self.parameters()).device
@@ -41,13 +43,14 @@ class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
     def forward(self, x):
         pass
 
-
-    #----------------- XdG-specifc functions -----------------#
+    # ----------------- XdG-specifc functions -----------------#
 
     def apply_XdGmask(self, task):
-        '''Apply task-specific mask, by setting activity of pre-selected subset of nodes to zero.
+        """Apply task-specific mask, by setting activity of pre-selected subset of nodes to zero.
 
-        [task]   <int>, starting from 1'''
+        [task]   <int>, starting from 1
+
+        """
 
         assert self.mask_dict is not None
         torchType = next(self.parameters()).detach()
@@ -65,8 +68,7 @@ class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
             gating_mask = np.repeat(1., len(excit_buffer))  # -> define "unit mask" (i.e., no masking at all)
             excit_buffer.set_(torchType.new(gating_mask))   # -> apply this unit mask
 
-
-    #----------------- EWC-specifc functions -----------------#
+    # ---------------- EWC-specifc functions -----------------#
 
     def estimate_fisher(self, dataset, allowed_classes=None, collate_fn=None):
         '''After completing training on a task, estimate diagonal of Fisher Information matrix.

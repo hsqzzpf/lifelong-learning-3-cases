@@ -43,8 +43,10 @@ def validate(model, dataset, batch_size=128, test_size=1024, verbose=True, allow
         labels = labels - allowed_classes[0] if (allowed_classes is not None) else labels
         with torch.no_grad():
             if with_exemplars:
+                print('data size: {}'.format(data.size()))
                 predicted = model.classify_with_exemplars(data, allowed_classes=allowed_classes)
                 # - in case of Domain-IL scenario, collapse all corresponding domains into same class
+                print('evaluate; max predicted size: {}, model classes: {}'.format(predicted.size(), model.classes))
                 if max(predicted).item() >= model.classes:
                     predicted = predicted % model.classes
             else:

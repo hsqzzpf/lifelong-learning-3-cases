@@ -34,14 +34,13 @@ task_params.add_argument('--experiment', type=str, default='ImageNet', choices=[
                                                                                 'CIFAR100-animal',
                                                                                 'ImageNet'])
 task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
-task_params.add_argument('--tasks', type=int, default=5, help='number of tasks')
+task_params.add_argument('--tasks', type=int, default=8, help='number of tasks')
 
 # specify loss functions to be used
 loss_params = parser.add_argument_group('Loss Parameters')
 loss_params.add_argument('--bce', action='store_true', help="use binary (instead of multi-class) classication loss")
 loss_params.add_argument('--bce-distill', action='store_true', help='distilled loss on previous classes for new'
                                                                     ' examples (only if --bce & --scenario="class")')
-
 # model architecture parameters
 model_params = parser.add_argument_group('Model Parameters')
 model_params.add_argument('--fc-layers', type=int, default=3, dest='fc_lay', help="# of fully-connected layers")
@@ -54,11 +53,11 @@ model_params.add_argument('--singlehead', action='store_true', help="for Task-IL
 
 # training hyperparameters / initialization
 train_params = parser.add_argument_group('Training Parameters')
-train_params.add_argument('--iters', type=int, default=3, help="# batches to optimize solver")
+train_params.add_argument('--iters', type=int, default=500, help="# batches to optimize solver")
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=128, help="batch-size")
 train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
-train_params.add_argument('--random_seed', type=int, default=0)
+train_params.add_argument('--random_seed', type=int, default=100)
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
@@ -220,7 +219,6 @@ def run(args):
         model.optimizer = optim.SGD(model.optim_list)
     else:
         raise ValueError("Unrecognized optimizer, '{}' is not currently a valid option".format(args.optimizer))
-
 
     #-------------------------------------------------------------------------------------------------#
 
@@ -422,15 +420,7 @@ def run(args):
     if not os.path.exists('record'):
         os.makedirs('record')
 
-    method = ""
-
-    if args.icarl:
-        method += 'icarl, '
-    if args.replay != 'None':
-        method += args.replay + ', '
-    if args.distill:
-        method += 'distill, '
-    f = open('record/method-{}-randn-{}-scenario-{}.txt'.format(method, args.random_seed, args.scenario), 'a')
+    f = open('record/{}-randn{}.txt'.format(param_stamp, args.random_seed), 'a')
     #----------------------#
     #----- EVALUATION -----#
     #----------------------#

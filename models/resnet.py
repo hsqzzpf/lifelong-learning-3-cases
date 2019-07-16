@@ -189,6 +189,13 @@ class ResNet(nn.Module):
         super(ResNet, self).load_state_dict(model_dict)
 
 
+def resnet18(pretrained=False, num_classes=1000):
+    model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    return model
+
+
 def resnet34(pretrained=False, num_classes=1000):
     model = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)
     if pretrained:

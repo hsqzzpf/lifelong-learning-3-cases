@@ -137,7 +137,9 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
                 exemplars = torch.stack(exemplars).to(self._device())
                 with torch.no_grad():
                     features = self.feature_extractor(exemplars)
-                    print('feature size: {}'.format(features.size()))
+                    if len(features.size()) > 2:
+                        features = features.view(features.size()[0],
+                                                 features.size()[1] * features.size()[2] * features.size()[3])
                 if self.norm_exemplars:
                     features = F.normalize(features, p=2, dim=1)
                 # Calculate their mean and add to list
@@ -160,26 +162,22 @@ class ExemplarHandler(nn.Module, metaclass=abc.ABCMeta):
         # Extract features for input data (and reorganize)
         with torch.no_grad():
             feature = self.feature_extractor(x)    # (batch_size, feature_size)
+            if len(feature.size()) > 2:
+                try:
+                    feature = feature.view(feature.size()[0],
+                                       feature.size()[1] * feature.size()[2] * feature.size()[3])
+                except:
+                    feature = feature.view(1, feature.size()[0] * feature.size()[1] * feature.size()[2])
         if self.norm_exemplars:
             feature = F.normalize(feature, p=2, dim=1)
 
-        if len(feature.size()) > 3:
-            feature = feature.unsqueeze(4)
-            feature = feature.expand_as(means)
         feature = feature.unsqueeze(2)             # (batch_size, feature_size, 1)
         feature = feature.expand_as(means)         # (batch_size, feature_size, n_classes)
 
-        print('feature ssize: {}'.format(feature.size()))
-        print('mean size: {}'.format(means.size()))
-
-        if len(feature.size()) > 3:
-            feature_c = feature.view(feature.size()[0], feature.size()[1], feature.size()[2] * feature.size()[3])
-            mean_c = means.view(feature.size()[0], feature.size()[1], feature.size()[2] * feature.size()[3])
-
-            print('feature_c size: {}, mean_c size: {}'.format(feature_c.size(), mean_c.size()))
+        # print('feature_c size: {}, mean_c size: {}'.format(feature_c.size(), mean_c.size()))
         # For each data-point in [x], find which exemplar-mean is closest to its extracted features
-        dists = (feature - means).pow(2).sum(dim=1).squeeze()  # (batch_size, n_classes)
-        print('dist size: {}'.format(dists.size()))
+        # dists = (feature - means).pow(2).sum(dim=1).squeeze()  # (batch_size, n_classes)
+        dists = (feature - means).pow(2).sum(dim=1)  # (batch_size, n_classes)
         _, preds = dists.min(1)
 
         # Set mode of model back

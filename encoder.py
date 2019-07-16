@@ -10,7 +10,7 @@ from replayer import Replayer
 import utils
 
 from torchvision import models
-from models.resnet import resnet34
+from models.resnet import resnet18
 
 class Classifier(ContinualLearner, Replayer, ExemplarHandler):
     '''Model for classifying images, "enriched" as "ContinualLearner"-, Replayer- and ExemplarHandler-object.'''
@@ -46,7 +46,7 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         # mlp_output_size = fc_units if fc_layers>1 else image_channels*image_size**2
         # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
 
-        self.fcE = resnet34(pretrained=True, num_classes=classes)
+        self.fcE = resnet18(pretrained=True, num_classes=classes)
         # mlp_output_size = 512
         # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
         # self.fcE.fc = self.classifier
@@ -79,7 +79,8 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         feature_extractor = self.fcE.get_features()
         return feature_extractor(images).squeeze()
 
-    def train_a_batch(self, x, y, scores=None, x_=None, y_=None, scores_=None, rnt=0.5, active_classes=None, task=1):
+    def train_a_batch(self, x, y, scores=None, x_=None, y_=None, scores_=None, rnt=0.5, active_classes=None, task=1,
+                      batch_idx=1):
         '''Train model for one batch ([x],[y]), possibly supplemented with replayed data ([x_],[y_/scores_]).
 
         [x]               <tensor> batch of inputs (could be None, in which case only 'replayed' data is used)
@@ -98,7 +99,11 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
 
         # Reset optimizer
         self.optimizer.zero_grad()
-
+        for param_group in self.optimizer.param_groups:
+            if batch_idx % 400 == 0:
+                param_group['lr'] *= 0.5
+            if batch_idx == 1:
+                param_group['lr'] = 0.001
 
         ##--(1)-- CURRENT DATA --##
 

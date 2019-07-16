@@ -330,6 +330,15 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
                     a3.append(a1[i])
                     a3.append(a2[i])
                 class_split = ClassSplit(40, [15, 5, 5, 5, 5, 5, 5], random_sort=a3)
+            elif random_seed == 51:
+                a1 = [x for x in range(20)]
+                a2 = [x for x in range(20, 40)]
+
+                a3 = []
+                for i in range(len(a1)):
+                    a3.append(a2[i])
+                    a3.append(a1[i])
+                class_split = ClassSplit(40, [15, 5, 5, 5, 5, 5, 5], random_sort=a3)
             else:
                 class_split = ClassSplit(40, [], random_seed=random_seed)
 

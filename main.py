@@ -57,7 +57,7 @@ train_params.add_argument('--iters', type=int, default=500, help="# batches to o
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=128, help="batch-size")
 train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
-train_params.add_argument('--random_seed', type=int, default=100)
+train_params.add_argument('--random_seed', type=int, default=101)
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
@@ -95,7 +95,7 @@ icarl_params = parser.add_argument_group('Exemplar Parameters')
 icarl_params.add_argument('--icarl', action='store_true', help="bce-distill, use-exemplars & add-exemplars")
 icarl_params.add_argument('--use-exemplars', action='store_true', help="use exemplars for classification")
 icarl_params.add_argument('--add-exemplars', action='store_true', help="add exemplars to current task dataset")
-icarl_params.add_argument('--budget', type=int, default=6000, dest="budget", help="how many exemplars can be stored?")
+icarl_params.add_argument('--budget', type=int, default=800, dest="budget", help="how many exemplars can be stored?")
 icarl_params.add_argument('--herding', action='store_true', help="use herding to select exemplars (instead of random)")
 icarl_params.add_argument('--norm-exemplars', action='store_true', help="normalize features/averages of exemplars")
 

@@ -147,7 +147,10 @@ def train_cl(model, train_datasets, replay_mode="none", scenario="class",classes
             if replay_mode=="offline" and scenario=="task":
                 x = y = scores = None
             else:
-                x, y = next(data_loader)                                    #--> sample training data of current task
+                try:
+                    x, y = next(data_loader)                                    #--> sample training data of current task
+                except StopIteration:
+                    break
                 y = y-classes_per_task*(task-1) if scenario=="task" else y  #--> ITL: adjust y-targets to 'active range'
                 x, y = x.to(device), y.to(device)                           #--> transfer them to correct device
                 # If --bce, --bce-distill & scenario=="class", calculate scores of current batch with previous model

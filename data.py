@@ -309,18 +309,17 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
         config = DATASET_CONFIGS['ImageNet']
         classes_per_task = int(np.floor(40 / tasks))
         if not only_config:
-
-            # prepare permutation to shuffle label-ids (to create different class batches for each random seed)
-            permutation = np.array(list(range(10))) if exception else np.random.permutation(list(range(10)))
-            target_transform = transforms.Lambda(lambda y, x=permutation: int(permutation[y]))
-
-            # prepare train and test datasets with all classes
-            # mnist_train = get_dataset('CIFAR10', type="train", dir=data_dir, target_transform=target_transform,
-            #                           verbose=verbose)
-            # mnist_test = get_dataset('CIFAR10', type="test", dir=data_dir, target_transform=target_transform,
-            #                          verbose=verbose)
             if random_seed == 100:
                 class_split = ClassSplit(40, [], random_sort=[x for x in range(40)])
+            elif random_seed == 101:
+                a1 = [x for x in range(20)]
+                a2 = [x for x in range(20, 40)]
+                a3 = []
+                for i in range(0, 20, 5):
+                    a3.extend(a1[i: i+5])
+                    a3.extend(a2[i: i+5])
+                print('a3: {}'.format(a3))
+                class_split = ClassSplit(40, [], random_sort=a3)
             elif random_seed == 50:
                 a1 = [x for x in range(20)]
                 a2 = [x for x in range(20, 40)]

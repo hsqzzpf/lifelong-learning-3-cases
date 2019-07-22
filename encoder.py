@@ -10,7 +10,7 @@ from replayer import Replayer
 import utils
 
 from torchvision import models
-from models.resnet import resnet18
+from models.resnet import resnet18, resnet34
 
 class Classifier(ContinualLearner, Replayer, ExemplarHandler):
     '''Model for classifying images, "enriched" as "ContinualLearner"-, Replayer- and ExemplarHandler-object.'''
@@ -99,11 +99,11 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
 
         # Reset optimizer
         self.optimizer.zero_grad()
-        for param_group in self.optimizer.param_groups:
-            if batch_idx % 400 == 0:
-                param_group['lr'] *= 0.5
-            if batch_idx == 1:
-                param_group['lr'] = 0.001
+        # for param_group in self.optimizer.param_groups:
+        #     if batch_idx % 400 == 0:
+        #         param_group['lr'] *= 0.5
+        #     if batch_idx == 1:
+        #         param_group['lr'] = 0.0001
 
         ##--(1)-- CURRENT DATA --##
 

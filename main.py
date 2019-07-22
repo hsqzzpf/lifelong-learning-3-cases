@@ -29,12 +29,12 @@ parser.add_argument('--results-dir', type=str, default='./results', dest='r_dir'
 
 # expirimental task parameters
 task_params = parser.add_argument_group('Task Parameters')
-task_params.add_argument('--experiment', type=str, default='ImageNet', choices=['permMNIST', 'splitMNIST',
+task_params.add_argument('--experiment', type=str, default='CIFAR100-animal', choices=['permMNIST', 'splitMNIST',
                                                                                 'CIFAR10',
                                                                                 'CIFAR100-animal',
                                                                                 'ImageNet'])
 task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
-task_params.add_argument('--tasks', type=int, default=8, help='number of tasks')
+task_params.add_argument('--tasks', type=int, default=9, help='number of tasks')
 
 # specify loss functions to be used
 loss_params = parser.add_argument_group('Loss Parameters')
@@ -53,11 +53,11 @@ model_params.add_argument('--singlehead', action='store_true', help="for Task-IL
 
 # training hyperparameters / initialization
 train_params = parser.add_argument_group('Training Parameters')
-train_params.add_argument('--iters', type=int, default=500, help="# batches to optimize solver")
+train_params.add_argument('--iters', type=int, default=700, help="# batches to optimize solver")
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
-train_params.add_argument('--batch', type=int, default=128, help="batch-size")
-train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='adam')
-train_params.add_argument('--random_seed', type=int, default=101)
+train_params.add_argument('--batch', type=int, default=100, help="batch-size")
+train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='sgd')
+train_params.add_argument('--random_seed', type=int, default=100)
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
@@ -95,7 +95,7 @@ icarl_params = parser.add_argument_group('Exemplar Parameters')
 icarl_params.add_argument('--icarl', action='store_true', help="bce-distill, use-exemplars & add-exemplars")
 icarl_params.add_argument('--use-exemplars', action='store_true', help="use exemplars for classification")
 icarl_params.add_argument('--add-exemplars', action='store_true', help="add exemplars to current task dataset")
-icarl_params.add_argument('--budget', type=int, default=800, dest="budget", help="how many exemplars can be stored?")
+icarl_params.add_argument('--budget', type=int, default=900, dest="budget", help="how many exemplars can be stored?")
 icarl_params.add_argument('--herding', action='store_true', help="use herding to select exemplars (instead of random)")
 icarl_params.add_argument('--norm-exemplars', action='store_true', help="normalize features/averages of exemplars")
 
@@ -216,7 +216,7 @@ def run(args):
     if model.optim_type in ("adam", "adam_reset"):
         model.optimizer = optim.Adam(model.optim_list, betas=(0.9, 0.999))
     elif model.optim_type=="sgd":
-        model.optimizer = optim.SGD(model.optim_list)
+        model.optimizer = optim.SGD(model.optim_list, momentum=0.9, weight_decay=0.001, nesterov=True)
     else:
         raise ValueError("Unrecognized optimizer, '{}' is not currently a valid option".format(args.optimizer))
 
@@ -297,7 +297,7 @@ def run(args):
         if generator.optim_type in ("adam", "adam_reset"):
             generator.optimizer = optim.Adam(generator.optim_list, betas=(0.9, 0.999))
         elif generator.optim_type == "sgd":
-            generator.optimizer = optim.SGD(generator.optim_list)
+            generator.optimizer = optim.SGD(generator.optim_list, momentum=0.9, weight_decay=0.001, nesterov=True)
     else:
         generator = None
 

@@ -282,6 +282,16 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
                                                             11, 23,  35, 44, 37,
                                                             18, 28,  24, 38, 33,
                                                             17, 26,  27, 29, 34])
+            elif random_seed == 101:
+                class_split = ClassSplit(45, [], random_sort=[0, 16, 21, 26, 30, 31,
+                                                              42, 1, 8, 11, 15, 2,
+                                                              6, 9, 10, 14, 18,
+                                                              19, 23, 25, 29, 33,
+                                                              34, 37, 38, 40, 41,
+                                                              43 ,3, 4, 5, 12,
+                                                              17, 20, 22,24, 32, 35,
+                                                              39, 7, 13, 27, 28, 36, 44])
+
             else:
                 class_split = ClassSplit(45, [], random_seed=random_seed)
 
@@ -294,7 +304,7 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
             labels_per_task = [
                 list(np.array(range(classes_per_task)) + classes_per_task * task_id) for task_id in range(tasks)
             ]
-
+            # labels_per_task = [[x for x in range(12)], [x for x in range(12, 30)], [x for x in range(30, 45)]]
             # split them up into sub-tasks
             train_datasets = []
             test_datasets = []
@@ -350,7 +360,6 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
             labels_per_task = [
                 list(np.array(range(classes_per_task)) + classes_per_task * task_id) for task_id in range(tasks)
             ]
-
             # split them up into sub-tasks
             train_datasets = []
             test_datasets = []

@@ -11,6 +11,8 @@ import utils
 
 from torchvision import models
 from models.resnet import resnet18, resnet34
+from models.inception import inception_v3
+from models.vgg import vgg19_bn
 
 class Classifier(ContinualLearner, Replayer, ExemplarHandler):
     '''Model for classifying images, "enriched" as "ContinualLearner"-, Replayer- and ExemplarHandler-object.'''
@@ -47,6 +49,7 @@ class Classifier(ContinualLearner, Replayer, ExemplarHandler):
         # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
 
         self.fcE = resnet18(pretrained=True, num_classes=classes)
+        # self.fcE = vgg19_bn(pretrained=True, num_classes=classes)
         # mlp_output_size = 512
         # self.classifier = fc_layer(mlp_output_size, classes, excit_buffer=True, nl='none', drop=fc_drop)
         # self.fcE.fc = self.classifier

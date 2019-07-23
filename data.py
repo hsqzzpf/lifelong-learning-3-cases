@@ -5,7 +5,7 @@ from torch.utils.data import ConcatDataset, Dataset
 import torch
 from Datasets.increm_animals import ClassSplit, FlexAnimalSet
 from os.path import join
-
+import random
 
 def _permutate_image_pixels(image, permutation):
     '''Permutate the pixels of an image according to [permutation].
@@ -256,41 +256,149 @@ def get_multitask_experiment(name, scenario, tasks, data_dir="./datasets", only_
         classes_per_task = int(np.floor(45 / tasks))
         if not only_config:
 
-            # prepare permutation to shuffle label-ids (to create different class batches for each random seed)
-            permutation = np.array(list(range(10))) if exception else np.random.permutation(list(range(10)))
-            target_transform = transforms.Lambda(lambda y, x=permutation: int(permutation[y]))
+            if 50 <= random_seed < 100:
+                a0 = [0, 2, 3, 1, 6]
+                a1 = [12, 11, 17, 18, 16]
+                a2 = [14, 4, 20, 9, 13]
+                a3 = [23, 26, 28, 30, 25]
+                a4 = [5, 21, 8, 22, 35]
+                a5 = [27, 24, 32, 42, 7]
+                a6 = [39, 15, 36, 44, 29]
+                a7 = [38, 40, 31, 10, 43]
+                a8 = [19, 41, 37, 34, 33]
 
-            # prepare train and test datasets with all classes
-            # mnist_train = get_dataset('CIFAR10', type="train", dir=data_dir, target_transform=target_transform,
-            #                           verbose=verbose)
-            # mnist_test = get_dataset('CIFAR10', type="test", dir=data_dir, target_transform=target_transform,
-            #                          verbose=verbose)
+                combine = list()
+                combine.append(a0)
+                combine.append(a1)
+                combine.append(a2)
+                combine.append(a3)
+                combine.append(a4)
+                combine.append(a5)
+                combine.append(a6)
+                combine.append(a7)
+                combine.append(a8)
 
-            if random_seed == 50:
-                class_split = ClassSplit(45, [], random_sort=[0,  2,  3,   1,   6,  12, 11, 17, 18,
-                                                          16, 14, 4,  20,   9,  13, 23, 26, 28,
-                                                          30, 25, 5,  21,   8,  22, 35, 27, 24,
-                                                          32, 42, 7,  39,  15,  36, 44, 29, 38,
-                                                          40, 31, 10, 43,  19,  41, 37, 34, 33])
-            elif random_seed == 100:
-                class_split = ClassSplit(45, [], random_sort=[2, 14, 25, 42, 31,
-                                                            0,  16,  30, 32, 40,
-                                                            3,   4,   5,  7, 10,
-                                                            1,  20,  21, 39, 43,
-                                                            6,   9,   8, 15, 19,
-                                                            12, 13,  22, 36, 41,
-                                                            11, 23,  35, 44, 37,
-                                                            18, 28,  24, 38, 33,
-                                                            17, 26,  27, 29, 34])
-            elif random_seed == 101:
-                class_split = ClassSplit(45, [], random_sort=[0, 16, 21, 26, 30, 31,
-                                                              42, 1, 8, 11, 15, 2,
-                                                              6, 9, 10, 14, 18,
-                                                              19, 23, 25, 29, 33,
-                                                              34, 37, 38, 40, 41,
-                                                              43 ,3, 4, 5, 12,
-                                                              17, 20, 22,24, 32, 35,
-                                                              39, 7, 13, 27, 28, 36, 44])
+                random.seed(random_seed-50)
+                sequence = [x for x in range(9)]
+                random.shuffle(sequence)
+
+                sort = list()
+                for idx in sequence:
+                    sort.extend(combine[idx])
+                class_split = ClassSplit(45, [], random_sort=sort)
+
+            elif 100 <= random_seed < 200:
+                a0 = [2,  14,  25, 42, 31]
+                a1 = [0,  16,  30, 32, 40]
+                a2 = [3,   4,   5,  7, 10]
+                a3 = [1,  20,  21, 39, 43]
+                a4 = [6,   9,   8, 15, 19]
+                a5 = [12, 13,  22, 36, 41]
+                a6 = [11, 23,  35, 44, 37]
+                a7 = [18, 28,  24, 38, 33]
+                a8 = [17, 26,  27, 29, 34]
+
+                combine = list()
+                combine.append(a0)
+                combine.append(a1)
+                combine.append(a2)
+                combine.append(a3)
+                combine.append(a4)
+                combine.append(a5)
+                combine.append(a6)
+                combine.append(a7)
+                combine.append(a8)
+
+                random.seed(random_seed - 100)
+                sequence = [x for x in range(9)]
+                random.shuffle(sequence)
+
+                sort = list()
+                for idx in sequence:
+                    sort.extend(combine[idx])
+                class_split = ClassSplit(45, [], random_sort=sort)
+                # class_split = ClassSplit(45, [], random_sort=[2, 14, 25, 42, 31,
+                #                                             0,  16,  30, 32, 40,
+                #                                             3,   4,   5,  7, 10,
+                #                                             1,  20,  21, 39, 43,
+                #                                             6,   9,   8, 15, 19,
+                #                                             12, 13,  22, 36, 41,
+                #                                             11, 23,  35, 44, 37,
+                #                                             18, 28,  24, 38, 33,
+                #                                             17, 26,  27, 29, 34])
+            elif 200 <= random_seed < 300:
+                a0 = [0, 16, 21, 26, 30, 31, 42]
+                a1 = [1, 8, 11, 15]
+                a2 = [2, 6, 9, 10, 14, 18, 19, 23, 25, 29, 33, 34, 37, 38, 40, 41, 43]
+                a3 = [3, 4, 5, 12, 17, 20, 22, 24, 32, 35, 39]
+                a4 = [7, 13, 27, 28, 36, 44]
+
+                combine = list()
+                combine.append(a0)
+                combine.append(a1)
+                combine.append(a2)
+                combine.append(a3)
+                combine.append(a4)
+
+                random.seed(random_seed - 200)
+                sequence = [x for x in range(5)]
+                random.shuffle(sequence)
+
+                if random_seed < 250:
+                    sort = list()
+                    for idx in sequence:
+                        sort.extend(combine[idx])
+                    class_split = ClassSplit(45, [], random_sort=sort)
+                else:
+                    sort = list()
+                    count = 0
+                    horizon = 0
+                    while count < 45:
+                        for idx in sequence:
+                            if len(combine[idx]) <= horizon:
+                                continue
+                            else:
+                                sort.append(combine[idx][horizon])
+                                count += 1
+                        horizon += 1
+                    class_split = ClassSplit(45, [], random_sort=sort)
+            elif 300 <= random_seed < 400:
+                a0 = [0, 12, 14, 16, 30, 32, 40, 41, 42]
+                a1 = [1, 2, 9, 18, 24, 25, 26, 27, 28, 29, 31, 33, 38]
+                a2 = [3, 4, 5, 7, 10, 11, 22, 23, 34, 35, 36, 37, 44]
+                a3 = [6, 8, 13, 15, 19]
+                a4 = [17, 20, 21, 39, 43]
+
+                combine = list()
+                combine.append(a0)
+                combine.append(a1)
+                combine.append(a2)
+                combine.append(a3)
+                combine.append(a4)
+
+                random.seed(random_seed - 300)
+                sequence = [x for x in range(5)]
+                random.shuffle(sequence)
+
+                if random_seed < 350:
+                    sort = list()
+                    for idx in sequence:
+                        sort.extend(combine[idx])
+                    class_split = ClassSplit(45, [], random_sort=sort)
+                else:
+                    sort = list()
+                    count = 0
+                    horizon = 0
+                    while count < 45:
+                        for idx in sequence:
+                            if len(combine[idx]) <= horizon:
+                                continue
+                            else:
+                                sort.append(combine[idx][horizon])
+                                count += 1
+                        horizon += 1
+                    print(sort)
+                    class_split = ClassSplit(45, [], random_sort=sort)
 
             else:
                 class_split = ClassSplit(45, [], random_seed=random_seed)

@@ -33,7 +33,7 @@ task_params.add_argument('--experiment', type=str, default='CIFAR100-animal', ch
                                                                                 'CIFAR10',
                                                                                 'CIFAR100-animal',
                                                                                 'ImageNet'])
-task_params.add_argument('--scenario', type=str, default='class', choices=['task', 'domain', 'class'])
+task_params.add_argument('--scenario', type=str, default='domain', choices=['task', 'domain', 'class'])
 task_params.add_argument('--tasks', type=int, default=9, help='number of tasks')
 
 # specify loss functions to be used
@@ -57,7 +57,7 @@ train_params.add_argument('--iters', type=int, default=700, help="# batches to o
 train_params.add_argument('--lr', type=float, default=0.001, help="learning rate")
 train_params.add_argument('--batch', type=int, default=100, help="batch-size")
 train_params.add_argument('--optimizer', type=str, choices=['adam', 'adam_reset', 'sgd'], default='sgd')
-train_params.add_argument('--random_seed', type=int, default=100)
+train_params.add_argument('--random_seed', type=int, default=376)
 
 # "memory replay" parameters
 replay_params = parser.add_argument_group('Replay Parameters')
